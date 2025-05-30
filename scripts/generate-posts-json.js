@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const prisma = new PrismaClient();
-const POSTS_PER_PAGE = 10;
+const POSTS_PER_PAGE = 2;
 
 async function generatePostsJson() {
   console.log('Starting to generate posts JSON files...');
@@ -14,10 +14,11 @@ async function generatePostsJson() {
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
-  // 1. Generate data cho trang chủ (existing code)
+  // Lấy tổng số posts
   const total = await prisma.post.count();
   const totalPages = Math.ceil(total / POSTS_PER_PAGE);
 
+  // Tạo metadata file TRƯỚC
   const metaFile = path.join(dataDir, 'posts-meta.json');
   fs.writeFileSync(
     metaFile,
@@ -32,7 +33,9 @@ async function generatePostsJson() {
       2
     )
   );
+  console.log(`Generated ${metaFile}`);
 
+  // Generate JSON cho mỗi page
   for (let page = 1; page <= totalPages; page++) {
     const posts = await prisma.post.findMany({
       take: POSTS_PER_PAGE,
@@ -50,6 +53,7 @@ async function generatePostsJson() {
       }
     });
 
+    // Lưu vào file JSON
     const fileName = path.join(dataDir, `posts-page-${page}.json`);
     fs.writeFileSync(
       fileName,
@@ -64,95 +68,12 @@ async function generatePostsJson() {
         2
       )
     );
+
+    console.log(`Generated ${fileName} with ${posts.length} posts`);
   }
-
-  // 2. Generate data cho từng model
-  const models = await prisma.model.findMany({
-    include: {
-      usernames: true,
-      _count: {
-        select: { posts: true }
-      }
-    }
-  });
-
-  // Tạo thư mục models
-  const modelsDir = path.join(dataDir, 'models');
-  if (!fs.existsSync(modelsDir)) {
-    fs.mkdirSync(modelsDir, { recursive: true });
-  }
-
-  // Generate data cho từng model
-  for (const model of models) {
-    const primaryUsername = model.usernames.find((u) => u.isPrimary)?.username;
-    if (!primaryUsername) continue;
-
-    const modelTotal = model._count.posts;
-    const modelTotalPages = Math.ceil(modelTotal / POSTS_PER_PAGE);
-
-    // Generate pages cho model
-    for (let page = 1; page <= modelTotalPages; page++) {
-      const posts = await prisma.post.findMany({
-        where: { modelId: model.id },
-        take: POSTS_PER_PAGE,
-        skip: (page - 1) * POSTS_PER_PAGE,
-        include: {
-          model: {
-            include: {
-              usernames: true
-            }
-          },
-          media: true
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      });
-
-      const fileName = path.join(
-        modelsDir,
-        `${primaryUsername}-page-${page}.json`
-      );
-      fs.writeFileSync(
-        fileName,
-        JSON.stringify(
-          {
-            posts,
-            page,
-            totalPages: modelTotalPages,
-            hasMore: page < modelTotalPages,
-            model: model
-          },
-          null,
-          2
-        )
-      );
-    }
-
-    // Create model info file
-    const modelInfoFile = path.join(modelsDir, `${primaryUsername}-info.json`);
-    fs.writeFileSync(
-      modelInfoFile,
-      JSON.stringify(
-        {
-          model,
-          totalPosts: modelTotal,
-          totalPages: modelTotalPages
-        },
-        null,
-        2
-      )
-    );
-
-    console.log(`Generated data for model: ${model.name} (${primaryUsername})`);
-  }
-
-  // 3. Save all models data
-  const allModelsFile = path.join(dataDir, 'all-models.json');
-  fs.writeFileSync(allModelsFile, JSON.stringify(models, null, 2));
 
   await prisma.$disconnect();
-  console.log('Done generating all JSON files!');
+  console.log(`Done! Generated ${totalPages} page files.`);
 }
 
 generatePostsJson().catch((error) => {
