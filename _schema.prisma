@@ -1,0 +1,70 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Model {
+  id          String     @id @default(cuid())
+  name        String     
+  avatarUrl   String      
+  location    String?    
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  usernames   Username[] 
+  posts       Post[]    
+}
+
+model Username {
+  id        String   @id @default(cuid())
+  username  String   
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isPrimary Boolean  @default(false)
+  
+  // Relations
+  modelId String
+  model   Model  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+}
+
+model Post {
+  id           String @id @default(cuid())
+  thumbnailUrl String
+  title       String?    // Tên/tiêu đề bài đăng
+  description String?   // Mô tả bài đăng
+  downloadUrl String?
+  postCount   Int?
+  //isFeatured  Boolean   @default(false) // Bài đăng nổi bật
+  publishedAt DateTime? // Ngày xuất bản
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  modelId String
+  model   Model        @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  media   MediaFile[]  // Nhiều file ảnh/video
+}
+
+model MediaFile {
+  id          String    @id @default(cuid())
+  url         String    // URL của file
+  //thumbnailUrl String?  // URL thumbnail (cho video)
+  type        MediaType // Loại file
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  GIF
+}
