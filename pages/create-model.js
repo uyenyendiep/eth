@@ -14,12 +14,10 @@ import {
   IconButton,
   Flex,
   Spacer,
-  HStack,
-  Link as ChakraLink
+  HStack
 } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
-import Link from 'next/link';
 
 export default function CreateModel() {
   const [name, setName] = useState('');
