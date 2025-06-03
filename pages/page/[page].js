@@ -54,20 +54,33 @@ const Post = ({ id, thumbnailUrl, downloadUrl, model, media }) => {
           <Flex p={3} align="center">
             {/* Avatar với link đến model detail */}
 
-            <Image
-              src={model.avatarUrl}
-              alt={model.name}
-              boxSize="48px"
-              borderRadius="full"
-              objectFit="cover"
-              mr={3}
-            />
+            <Link href={`/${primaryUsername}`} passHref legacyBehavior>
+              <Image
+                src={model.avatarUrl}
+                alt={model.name}
+                boxSize="48px"
+                borderRadius="full"
+                objectFit="cover"
+                mr={3}
+              />
+            </Link>
 
             <Stack spacing={0} flex={1}>
-              <Text fontWeight="bold">{model.name}</Text>
-              <Text fontSize="sm" color="gray.500">
-                {model.usernames.map((u) => u.username).join(' / ')}
-              </Text>
+              <Link href={`/${primaryUsername}`} passHref legacyBehavior>
+                <Text fontWeight="bold" width="fit-content" display="inline">
+                  {model.name}
+                </Text>
+              </Link>
+              <Link href={`/${primaryUsername}`} passHref legacyBehavior>
+                <Text
+                  fontSize="sm"
+                  color="gray.500"
+                  width="fit-content"
+                  display="inline"
+                >
+                  {model.usernames.map((u) => u.username).join(' / ')}
+                </Text>
+              </Link>
             </Stack>
 
             {/* Media count icons */}
