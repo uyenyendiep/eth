@@ -21,7 +21,7 @@ import { useScrollRestoration } from '../../hooks/useScrollRestoration';
 
 const POSTS_PER_PAGE = 10;
 
-const Post = ({ id, thumbnailUrl, downloadUrl, model, media }) => {
+const Post = ({ id, thumbnailUrl, downloadUrl, model, media, postCount }) => {
   const primaryUsername = model.usernames.find((u) => u.isPrimary)?.username;
 
   const imageCount =
@@ -45,7 +45,7 @@ const Post = ({ id, thumbnailUrl, downloadUrl, model, media }) => {
       maxW="600px"
       mx="auto"
     >
-      <Link href={`/${primaryUsername}/post/${id}`} passHref>
+      <Link href={`/${primaryUsername}/post/${postCount}`} passHref>
         <Stack as={ChakraLink} spacing={0}>
           <Box borderTopRadius={4} overflow="hidden">
             <CombinedThumbnail media={media} modelName={model.name} />

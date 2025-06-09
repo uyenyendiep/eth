@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 export default function CombinedThumbnail({
   media,
   modelName,
-  height = '300px',
+  height = '400px',
   spacing = '5px',
   maxImages = 3
 }) {

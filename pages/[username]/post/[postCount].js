@@ -19,8 +19,27 @@ import { FaLongArrowAltLeft } from 'react-icons/fa';
 export async function getStaticProps({ params }) {
   const prisma = new PrismaClient();
 
-  const post = await prisma.post.findUnique({
-    where: { id: params.id },
+  // Tìm model theo username
+  const username = await prisma.username.findFirst({
+    where: {
+      username: params.username,
+      isPrimary: true
+    },
+    include: {
+      model: true
+    }
+  });
+
+  if (!username) {
+    return { notFound: true };
+  }
+
+  // Tìm post theo postCount
+  const post = await prisma.post.findFirst({
+    where: {
+      modelId: username.model.id,
+      postCount: parseInt(params.postCount)
+    },
     include: {
       model: {
         include: {
@@ -31,9 +50,13 @@ export async function getStaticProps({ params }) {
     }
   });
 
+  if (!post) {
+    return { notFound: true };
+  }
+
   return {
     props: {
-      post: JSON.parse(JSON.stringify(post)) // để tránh lỗi serializable với Date
+      post: JSON.parse(JSON.stringify(post))
     }
   };
 }
@@ -53,12 +76,12 @@ export async function getStaticPaths() {
   const paths = posts
     .map((post) => {
       const primaryUsername = post.model.usernames.find((u) => u.isPrimary);
-      if (!primaryUsername) return null;
+      if (!primaryUsername || !post.postCount) return null;
 
       return {
         params: {
           username: primaryUsername.username,
-          id: post.id
+          postCount: post.postCount.toString()
         }
       };
     })
@@ -169,13 +192,6 @@ export default function PostDetail({ post }) {
           </Box>
         ))}
       </Stack>
-
-      {/* Back Button
-      <Link href="/" passHref>
-        <Button as={ChakraLink} mt={6} leftIcon={<FaLongArrowAltLeft />}>
-          Quay lại
-        </Button>
-      </Link> */}
     </Box>
   );
 }

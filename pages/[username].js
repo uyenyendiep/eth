@@ -43,7 +43,7 @@ const ModelPost = ({ post, username }) => {
       minW="600px"
       mx="auto"
     >
-      <Link href={`/${username}/post/${post.id}`} passHref>
+      <Link href={`/${username}/post/${post.postCount}`} passHref>
         <Stack as={ChakraLink} spacing={0}>
           <Box borderRadius={4} overflow="hidden">
             <CombinedThumbnail media={post.media} modelName={post.model.name} />
