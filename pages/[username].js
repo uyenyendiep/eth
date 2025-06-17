@@ -38,9 +38,8 @@ const ModelPost = ({ post, username }) => {
       borderRadius={4}
       my={4}
       bg="white"
-      width="100%"
-      maxW="600px"
-      minW="600px"
+      width={{ base: '100%', lg: '800px' }}
+      maxW="800px"
       mx="auto"
     >
       <Link href={`/${username}/post/${post.postCount}`} passHref>
@@ -50,7 +49,6 @@ const ModelPost = ({ post, username }) => {
           </Box>
 
           <Flex p={3} align="center" justify="space-between">
-            {/* Avatar */}
             <Link href={`/${username}`} passHref legacyBehavior>
               <Image
                 src={post.model.avatarUrl}
@@ -61,7 +59,7 @@ const ModelPost = ({ post, username }) => {
                 mr={3}
               />
             </Link>
-            {/* Tên model và usernames */}
+
             <Stack spacing={0} flex={1}>
               <Link href={`/${username}`} passHref legacyBehavior>
                 <Text fontWeight="bold" width="fit-content" display="inline">
@@ -276,36 +274,51 @@ export default function ModelDetailPage({
   const allUsernames = model.usernames.map((u) => u.username).join(' / ');
 
   return (
-    <Box maxW="600px" mx="auto">
+    <Box maxW="800px" mx="auto" px={{ base: 2, sm: 4 }}>
       {/* Model Header */}
-      <VStack spacing={4} p={4} bg="white" borderRadius="lg" mb={4}>
-        <Avatar src={model.avatarUrl} name={model.name} size="2xl" />
+      <VStack
+        spacing={{ base: 3, sm: 4 }}
+        p={{ base: 3, sm: 4 }}
+        bg="white"
+        borderRadius="lg"
+        mb={4}
+        width={{ base: '100%', lg: '800px' }}
+        maxW="800px"
+      >
+        <Avatar
+          src={model.avatarUrl}
+          name={model.name}
+          size={{ base: 'xl', sm: '2xl' }}
+        />
         <VStack spacing={1}>
-          <Heading size="lg">{model.name}</Heading>
-          <Text color="gray.600" fontSize="sm">
+          <Heading size={{ base: 'md', sm: 'lg' }}>{model.name}</Heading>
+          <Text
+            color="gray.600"
+            fontSize={{ base: 'xs', sm: 'sm' }}
+            textAlign="center"
+            px={2}
+          >
             {allUsernames}
           </Text>
           {model.location && (
-            <HStack color="gray.500" fontSize="sm">
+            <HStack color="gray.500" fontSize={{ base: 'xs', sm: 'sm' }}>
               <Icon as={FaMapMarkerAlt} />
               <Text>{model.location}</Text>
             </HStack>
           )}
         </VStack>
 
-        <HStack spacing={6} pt={2}>
+        <HStack spacing={{ base: 4, sm: 6 }} pt={2}>
           <VStack spacing={0}>
-            <Text fontWeight="bold" fontSize="xl">
+            <Text fontWeight="bold" fontSize={{ base: 'lg', sm: 'xl' }}>
               {model._count?.posts || 0}
             </Text>
-            <Text fontSize="sm" color="gray.600">
+            <Text fontSize={{ base: 'xs', sm: 'sm' }} color="gray.600">
               Posts
             </Text>
           </VStack>
         </HStack>
       </VStack>
-
-      {/* <Divider mb={4} /> */}
 
       {/* Posts List */}
       <List>

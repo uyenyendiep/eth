@@ -9,9 +9,7 @@ function MyApp({ Component, pageProps }) {
   return (
     <ChakraProvider resetCSS theme={theme}>
       <NavigationBar />
-      <Box pt="60px">
-        {' '}
-        {/* Padding top để tránh content bị che bởi navbar */}
+      <Box pt={{ base: '50px', sm: '60px' }}>
         <Component {...pageProps} />
       </Box>
       <Global
@@ -28,7 +26,7 @@ function MyApp({ Component, pageProps }) {
 
           #__next > div:last-child {
             flex: 1;
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 10px;
             width: 100%;

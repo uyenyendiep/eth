@@ -41,8 +41,8 @@ const Post = ({ id, thumbnailUrl, downloadUrl, model, media, postCount }) => {
       my={4}
       bg="white"
       key={id}
-      width="100%"
-      maxW="600px"
+      width={{ base: '100%', lg: '800px' }}
+      maxW="800px"
       mx="auto"
     >
       <Link href={`/${primaryUsername}/post/${postCount}`} passHref>

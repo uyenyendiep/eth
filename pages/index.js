@@ -13,7 +13,7 @@ import {
   Spinner
 } from '@chakra-ui/react';
 import Link from 'next/link';
-import { FaImage, FaVideo } from 'react-icons/fa'; // Thêm import này
+import { FaImage, FaVideo } from 'react-icons/fa';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import CombinedThumbnail from '../components/CombinedThumbnail';
 import { useScrollRestoration } from '../hooks/useScrollRestoration';
@@ -40,8 +40,8 @@ const Post = ({ id, thumbnailUrl, downloadUrl, model, media, postCount }) => {
       my={4}
       bg="white"
       key={id}
-      width="100%"
-      maxW="600px"
+      width={{ base: '100%', lg: '800px' }}
+      maxW="800px"
       mx="auto"
     >
       <Link href={`/${primaryUsername}/post/${postCount}`} passHref>
@@ -51,8 +51,6 @@ const Post = ({ id, thumbnailUrl, downloadUrl, model, media, postCount }) => {
           </Box>
 
           <Flex p={3} align="center">
-            {/* Avatar với link đến model detail */}
-
             <Link href={`/${primaryUsername}`} passHref legacyBehavior>
               <Image
                 src={model.avatarUrl}
@@ -82,7 +80,6 @@ const Post = ({ id, thumbnailUrl, downloadUrl, model, media, postCount }) => {
               </Link>
             </Stack>
 
-            {/* Media count icons */}
             <HStack spacing={3} ml={3}>
               {imageCount > 0 && (
                 <HStack spacing={1}>

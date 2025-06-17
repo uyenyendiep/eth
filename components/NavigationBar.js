@@ -32,6 +32,7 @@ export default function NavigationBar() {
   const [allModels, setAllModels] = useState([]);
   const searchRef = useRef();
   const inputRef = useRef();
+  const isScrollingRef = useRef(false);
 
   // Load all models data on mount
   useEffect(() => {
@@ -43,21 +44,125 @@ export default function NavigationBar() {
       .catch((err) => console.error('Error loading models:', err));
   }, []);
 
-  // Close search when clicking outside
+  // Detect scrolling
+  useEffect(() => {
+    let scrollTimeout;
+
+    const handleScroll = () => {
+      isScrollingRef.current = true;
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 150);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('touchmove', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('touchmove', handleScroll);
+      clearTimeout(scrollTimeout);
+    };
+  }, []);
+
+  // Close search when clicking outside (but not when scrolling)
   useOutsideClick({
     ref: searchRef,
     handler: () => {
-      if (isOpen && searchQuery === '') {
+      if (isOpen && searchQuery === '' && !isScrollingRef.current) {
         onClose();
       }
     }
   });
 
+  // Handle open search
+  const handleOpenSearch = () => {
+    // Save current scroll position
+    const scrollY = window.scrollY;
+
+    onOpen();
+
+    // Restore scroll position after state update
+    requestAnimationFrame(() => {
+      window.scrollTo(0, scrollY);
+    });
+  };
+
   // Focus input when search opens
   useEffect(() => {
     if (isOpen && inputRef.current) {
-      inputRef.current.focus();
+      // Multiple attempts to ensure keyboard opens
+      const focusAttempts = [50, 100, 200, 300];
+      const timeouts = focusAttempts.map((delay) =>
+        setTimeout(() => {
+          if (inputRef.current && document.activeElement !== inputRef.current) {
+            const scrollY = window.scrollY;
+
+            // Focus with preventScroll to avoid jump
+            inputRef.current.focus({ preventScroll: true });
+
+            // Click to trigger keyboard on some mobile browsers
+            inputRef.current.click();
+
+            // Maintain scroll position
+            if (window.scrollY !== scrollY) {
+              window.scrollTo(0, scrollY);
+            }
+          }
+        }, delay)
+      );
+
+      return () => timeouts.forEach(clearTimeout);
     }
+  }, [isOpen]);
+
+  // Prevent viewport resize when keyboard opens
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const metaViewport = document.querySelector('meta[name=viewport]');
+    const originalContent = metaViewport?.getAttribute('content');
+
+    // Set viewport to prevent resize
+    if (metaViewport) {
+      metaViewport.setAttribute(
+        'content',
+        'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0'
+      );
+    }
+
+    // Handle visual viewport changes (keyboard open/close)
+    const handleViewportChange = () => {
+      // Keep input focused when keyboard tries to close
+      if (inputRef.current && document.activeElement !== inputRef.current) {
+        inputRef.current.focus({ preventScroll: true });
+      }
+    };
+
+    // Use visualViewport API if available (better for mobile)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleViewportChange);
+      window.visualViewport.addEventListener('scroll', handleViewportChange);
+    }
+
+    return () => {
+      // Restore original viewport
+      if (metaViewport && originalContent) {
+        metaViewport.setAttribute('content', originalContent);
+      }
+
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener(
+          'resize',
+          handleViewportChange
+        );
+        window.visualViewport.removeEventListener(
+          'scroll',
+          handleViewportChange
+        );
+      }
+    };
   }, [isOpen]);
 
   // Handle search
@@ -80,7 +185,7 @@ export default function NavigationBar() {
           u.username.toLowerCase().includes(lowerQuery)
         );
       })
-      .slice(0, 10); // Increase limit for full-width dropdown
+      .slice(0, 10);
 
     setSearchResults(filtered);
   };
@@ -102,6 +207,9 @@ export default function NavigationBar() {
 
   // Close search and reset state
   const handleCloseSearch = () => {
+    if (inputRef.current) {
+      inputRef.current.blur();
+    }
     onClose();
     setSearchQuery('');
     setSearchResults([]);
@@ -114,7 +222,6 @@ export default function NavigationBar() {
       const data = await response.json();
 
       if (data.models && data.models.length > 0) {
-        // Lọc models có posts với validation chặt chẽ
         const modelsWithPosts = data.models.filter(
           (model) =>
             model.postCounts &&
@@ -127,13 +234,11 @@ export default function NavigationBar() {
           return;
         }
 
-        // Random một model
         const randomModelIndex = Math.floor(
           Math.random() * modelsWithPosts.length
         );
         const randomModel = modelsWithPosts[randomModelIndex];
 
-        // Tìm primary username
         const primaryUsername = randomModel.usernames.find(
           (u) => u.isPrimary
         )?.username;
@@ -142,14 +247,12 @@ export default function NavigationBar() {
           return;
         }
 
-        // Random một postCount từ danh sách thực tế
         const availablePostCounts = randomModel.postCounts;
         const randomIndex = Math.floor(
           Math.random() * availablePostCounts.length
         );
         const randomPostCount = availablePostCounts[randomIndex];
 
-        // Validation cuối cùng
         if (randomPostCount && primaryUsername) {
           router.push(`/${primaryUsername}/post/${randomPostCount}`);
         }
@@ -161,8 +264,10 @@ export default function NavigationBar() {
 
   return (
     <Box
-      position="sticky"
+      position="fixed"
       top={0}
+      left={0}
+      right={0}
       zIndex={1000}
       bg="white"
       borderBottom="1px"
@@ -170,20 +275,20 @@ export default function NavigationBar() {
       shadow="sm"
       ref={searchRef}
     >
-      <Box maxW="1200px" mx="auto" px={4}>
+      <Box maxW="100%" px={{ base: 2, sm: 4 }}>
         {!isOpen ? (
           // Normal Navigation Mode
           <Flex
             align="center"
             justify="space-between"
-            minH="60px"
+            h={{ base: '50px', sm: '60px' }}
             py={0}
             boxSizing="border-box"
           >
             {/* Logo */}
             <Link href="/" passHref legacyBehavior>
               <ChakraLink
-                fontSize={{ base: 'lg', md: 'xl' }}
+                fontSize={{ base: 'md', sm: 'lg', md: 'xl' }}
                 fontWeight="bold"
                 color="blue.600"
                 _hover={{ textDecoration: 'none', color: 'blue.700' }}
@@ -193,10 +298,10 @@ export default function NavigationBar() {
             </Link>
 
             {/* Navigation Items */}
-            <HStack spacing={{ base: 4, md: 6 }} align="center" minH="40px">
+            <HStack spacing={{ base: 2, sm: 4, md: 6 }} align="center">
               <Link href="/models" passHref legacyBehavior>
                 <ChakraLink
-                  fontSize="md"
+                  fontSize={{ base: 'sm', sm: 'md' }}
                   _hover={{ textDecoration: 'none', color: 'blue.600' }}
                 >
                   Models
@@ -204,7 +309,7 @@ export default function NavigationBar() {
               </Link>
 
               <ChakraLink
-                fontSize="md"
+                fontSize={{ base: 'sm', sm: 'md' }}
                 cursor="pointer"
                 onClick={handleRandom}
                 _hover={{ textDecoration: 'none', color: 'blue.600' }}
@@ -216,15 +321,20 @@ export default function NavigationBar() {
               <IconButton
                 icon={<SearchIcon />}
                 variant="ghost"
-                onClick={onOpen}
+                onClick={handleOpenSearch}
                 aria-label="Search"
-                size="md"
+                size={{ base: 'sm', sm: 'md' }}
               />
             </HStack>
           </Flex>
         ) : (
-          // Full Search Mode - Fixed height container
-          <Flex align="center" h="60px" py={0} boxSizing="border-box">
+          // Full Search Mode
+          <Flex
+            align="center"
+            h={{ base: '50px', sm: '60px' }}
+            py={0}
+            boxSizing="border-box"
+          >
             <InputGroup flex={1} h="full">
               <InputLeftElement h="full" pointerEvents="none">
                 <SearchIcon color="gray.400" />
@@ -237,11 +347,14 @@ export default function NavigationBar() {
                 onKeyPress={handleKeyPress}
                 onKeyDown={handleKeyDown}
                 h="full"
-                fontSize="3xl"
+                fontSize={{ base: 'xl', sm: '2xl', md: '3xl' }}
                 fontWeight="semibold"
                 fontFamily="sans-serif"
                 border="none"
                 borderRadius="none"
+                autoFocus={true}
+                inputMode="text"
+                enterKeyHint="search"
                 _focus={{
                   outline: 'none',
                   boxShadow: 'none',
@@ -255,8 +368,11 @@ export default function NavigationBar() {
                     color: 'gray.500',
                     fontWeight: 'normal'
                   },
-                  letterSpacing: '0.5px', // Tăng khoảng cách chữ
-                  lineHeight: '1.8' // Tăng line height
+                  letterSpacing: '0.5px',
+                  lineHeight: '1.8',
+                  WebkitUserSelect: 'text',
+                  userSelect: 'text',
+                  touchAction: 'manipulation'
                 }}
               />
               <InputRightElement h="full" pr={2}>
@@ -274,7 +390,7 @@ export default function NavigationBar() {
           </Flex>
         )}
 
-        {/* Search Results Dropdown - Full Width */}
+        {/* Search Results Dropdown */}
         {isOpen && searchResults.length > 0 && (
           <Box position="relative" w="full">
             <List
@@ -287,7 +403,7 @@ export default function NavigationBar() {
               borderColor="gray.200"
               borderRadius="md"
               shadow="xl"
-              maxH="400px"
+              maxH={{ base: '300px', sm: '400px' }}
               overflowY="auto"
               zIndex={1001}
             >
@@ -298,7 +414,7 @@ export default function NavigationBar() {
                 return (
                   <ListItem
                     key={model.id}
-                    p={4}
+                    p={{ base: 3, sm: 4 }}
                     _hover={{ bg: 'gray.50' }}
                     cursor="pointer"
                     borderBottom="1px"
@@ -309,17 +425,23 @@ export default function NavigationBar() {
                       handleCloseSearch();
                     }}
                   >
-                    <HStack spacing={4}>
+                    <HStack spacing={{ base: 3, sm: 4 }}>
                       <Avatar
                         src={model.avatarUrl}
                         name={model.name}
-                        size="md"
+                        size={{ base: 'sm', sm: 'md' }}
                       />
                       <VStack align="start" spacing={1} flex={1}>
-                        <Text fontSize="md" fontWeight="medium">
+                        <Text
+                          fontSize={{ base: 'sm', sm: 'md' }}
+                          fontWeight="medium"
+                        >
                           {model.name}
                         </Text>
-                        <Text fontSize="sm" color="gray.500">
+                        <Text
+                          fontSize={{ base: 'xs', sm: 'sm' }}
+                          color="gray.500"
+                        >
                           @{model.usernames.map((u) => u.username).join(', @')}
                         </Text>
                       </VStack>
@@ -330,7 +452,7 @@ export default function NavigationBar() {
 
               {/* View All Results Footer */}
               <ListItem
-                p={4}
+                p={{ base: 3, sm: 4 }}
                 bg="gray.50"
                 borderTop="2px"
                 borderColor="gray.200"
@@ -344,7 +466,11 @@ export default function NavigationBar() {
                   handleCloseSearch();
                 }}
               >
-                <Text fontSize="md" color="blue.600" fontWeight="medium">
+                <Text
+                  fontSize={{ base: 'sm', sm: 'md' }}
+                  color="blue.600"
+                  fontWeight="medium"
+                >
                   Xem tất cả kết quả cho "{searchQuery}" →
                 </Text>
               </ListItem>
@@ -365,14 +491,14 @@ export default function NavigationBar() {
               borderColor="gray.200"
               borderRadius="md"
               shadow="xl"
-              p={8}
+              p={{ base: 6, sm: 8 }}
               textAlign="center"
               zIndex={1001}
             >
-              <Text color="gray.500" fontSize="md">
+              <Text color="gray.500" fontSize={{ base: 'sm', sm: 'md' }}>
                 Không tìm thấy kết quả cho "{searchQuery}"
               </Text>
-              <Text color="gray.400" fontSize="sm" mt={2}>
+              <Text color="gray.400" fontSize={{ base: 'xs', sm: 'sm' }} mt={2}>
                 Thử tìm kiếm với từ khóa khác
               </Text>
             </Box>
