@@ -27,7 +27,9 @@ async function generatePostsJson() {
   // 3. Generate models list
   console.log('\n📋 Generating models list...');
   await generateModelsList(dataDir);
-  //await generateAllPostsIds(dataDir);
+
+  // 4. Generate all models json
+  await generateAllModelsJson(dataDir);
 
   await prisma.$disconnect();
   console.log('\n✅ Done! All JSON files generated successfully.');
@@ -210,21 +212,33 @@ async function generateModelsList(dataDir) {
   );
   console.log(`Generated ${metaFile}`);
 
+  // Lấy tất cả models với post mới nhất
+  const allModelsWithLatestPost = await prisma.model.findMany({
+    include: {
+      usernames: true,
+      _count: {
+        select: { posts: true }
+      },
+      posts: {
+        select: { createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 1
+      }
+    }
+  });
+
+  // Sắp xếp models theo post mới nhất
+  const sortedModels = allModelsWithLatestPost.sort((a, b) => {
+    const aLatestPost = a.posts[0]?.createdAt || new Date(0);
+    const bLatestPost = b.posts[0]?.createdAt || new Date(0);
+    return new Date(bLatestPost) - new Date(aLatestPost);
+  });
+
   // Generate JSON cho mỗi page của models
   for (let page = 1; page <= totalPages; page++) {
-    const models = await prisma.model.findMany({
-      take: MODELS_PER_PAGE,
-      skip: (page - 1) * MODELS_PER_PAGE,
-      include: {
-        usernames: true,
-        _count: {
-          select: { posts: true }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
+    const startIndex = (page - 1) * MODELS_PER_PAGE;
+    const endIndex = startIndex + MODELS_PER_PAGE;
+    const models = sortedModels.slice(startIndex, endIndex);
 
     const fileName = path.join(dataDir, `models-page-${page}.json`);
     fs.writeFileSync(
@@ -245,39 +259,6 @@ async function generateModelsList(dataDir) {
   }
 }
 
-// async function generateAllModelsJson(dataDir) {
-//   console.log('\n📋 Generating all-models.json...');
-
-//   const allModels = await prisma.model.findMany({
-//     include: {
-//       usernames: true,
-//       _count: {
-//         select: { posts: true }
-//       }
-//     },
-//     orderBy: {
-//       createdAt: 'desc'
-//     }
-//   });
-
-//   const fileName = path.join(dataDir, 'all-models.json');
-//   fs.writeFileSync(
-//     fileName,
-//     JSON.stringify(
-//       {
-//         models: allModels,
-//         total: allModels.length,
-//         generatedAt: new Date().toISOString()
-//       },
-//       null,
-//       2
-//     )
-//   );
-
-//   console.log(`Generated ${fileName} with ${allModels.length} models`);
-// }
-
-// Trong /scripts/generate-posts-json.js
 async function generateAllModelsJson(dataDir) {
   console.log('\n📋 Generating all-models.json...');
 
@@ -287,33 +268,41 @@ async function generateAllModelsJson(dataDir) {
       _count: {
         select: { posts: true }
       },
-      // QUAN TRỌNG: Lấy danh sách postCount thực tế
       posts: {
-        select: { postCount: true },
-        where: { postCount: { not: null } }, // Chỉ lấy posts có postCount
-        orderBy: { postCount: 'asc' }
+        select: {
+          postCount: true,
+          createdAt: true
+        },
+        where: { postCount: { not: null } },
+        orderBy: { createdAt: 'desc' }
       }
-    },
-    orderBy: {
-      createdAt: 'desc'
     }
   });
 
+  // Sắp xếp models theo post mới nhất
+  const sortedModels = allModels.sort((a, b) => {
+    const aLatestPost = a.posts[0]?.createdAt || new Date(0);
+    const bLatestPost = b.posts[0]?.createdAt || new Date(0);
+    return new Date(bLatestPost) - new Date(aLatestPost);
+  });
+
   // Format lại data
-  const formattedModels = allModels.map((model) => {
+  const formattedModels = sortedModels.map((model) => {
     // Tạo mảng postCounts từ posts
     const postCounts = model.posts
       .map((p) => p.postCount)
-      .filter((pc) => pc !== null); // Đảm bảo không có null
+      .filter((pc) => pc !== null)
+      .sort((a, b) => a - b); // Sắp xếp postCounts tăng dần
 
     return {
       id: model.id,
       name: model.name,
       avatarUrl: model.avatarUrl,
+      avatarGifUrl: model.avatarGifUrl,
       location: model.location,
       usernames: model.usernames,
       _count: model._count,
-      postCounts: postCounts, // Mảng [1, 2, 306, 9744]
+      postCounts: postCounts,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt
     };
@@ -335,72 +324,6 @@ async function generateAllModelsJson(dataDir) {
 
   console.log(`Generated ${fileName} with ${formattedModels.length} models`);
 }
-
-// Cập nhật function generatePostsJson() để gọi thêm generateAllModelsJson
-async function generatePostsJson() {
-  console.log('Starting to generate JSON files...');
-
-  const dataDir = path.join(process.cwd(), 'public', 'data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-
-  console.log('\n📄 Generating homepage posts...');
-  await generateHomepagePosts(dataDir);
-
-  console.log('\n👤 Generating model-specific posts...');
-  await generateModelPosts(dataDir);
-
-  console.log('\n📋 Generating models list...');
-  await generateModelsList(dataDir);
-
-  // Thêm dòng này
-  await generateAllModelsJson(dataDir);
-
-  await prisma.$disconnect();
-  console.log('\n✅ Done! All JSON files generated successfully.');
-}
-
-// async function generateAllPostsIds(dataDir) {
-//   console.log('\n🎲 Generating all-posts-ids.json for random feature...');
-
-//   const allPosts = await prisma.post.findMany({
-//     select: {
-//       id: true,
-//       model: {
-//         select: {
-//           usernames: {
-//             where: { isPrimary: true },
-//             select: { username: true }
-//           }
-//         }
-//       }
-//     }
-//   });
-
-//   const postsData = allPosts
-//     .map((post) => ({
-//       id: post.id,
-//       username: post.model.usernames[0]?.username || ''
-//     }))
-//     .filter((p) => p.username); // Lọc bỏ posts không có primary username
-
-//   const fileName = path.join(dataDir, 'all-posts-ids.json');
-//   fs.writeFileSync(
-//     fileName,
-//     JSON.stringify(
-//       {
-//         posts: postsData,
-//         total: postsData.length,
-//         generatedAt: new Date().toISOString()
-//       },
-//       null,
-//       2
-//     )
-//   );
-
-//   console.log(`Generated ${fileName} with ${postsData.length} post IDs`);
-// }
 
 // Chạy script
 generatePostsJson().catch((error) => {

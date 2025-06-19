@@ -288,23 +288,33 @@ export default function NavigationBar() {
             {/* Logo */}
             <Link href="/" passHref legacyBehavior>
               <ChakraLink
-                fontSize={{ base: 'md', sm: 'lg', md: 'xl' }}
+                fontSize={{ base: 'md', sm: 'xl', md: '2xl' }}
                 fontWeight="bold"
-                color="blue.600"
-                _hover={{ textDecoration: 'none', color: 'blue.700' }}
+                color="black.600"
+                _hover={{ textDecoration: 'none' }}
               >
-                ethot.me
+                eTHOT.
+                {/* <Text
+                  as="span"
+                  fontSize={{ base: 'sm', sm: 'md', md: 'lg' }}
+                  fontWeight="hairline"
+                  color="red.600"
+                  fontStyle="italic"
+                >
+                  me
+                </Text> */}
               </ChakraLink>
             </Link>
 
             {/* Navigation Items */}
-            <HStack spacing={{ base: 2, sm: 4, md: 6 }} align="center">
+            <HStack spacing={{ base: 4, sm: 6, md: 8 }} align="center">
               <Link href="/models" passHref legacyBehavior>
                 <ChakraLink
                   fontSize={{ base: 'sm', sm: 'md' }}
-                  _hover={{ textDecoration: 'none', color: 'blue.600' }}
+                  _hover={{ textDecoration: 'none' }}
+                  fontWeight="light"
                 >
-                  Models
+                  MODELS
                 </ChakraLink>
               </Link>
 
@@ -312,9 +322,10 @@ export default function NavigationBar() {
                 fontSize={{ base: 'sm', sm: 'md' }}
                 cursor="pointer"
                 onClick={handleRandom}
-                _hover={{ textDecoration: 'none', color: 'blue.600' }}
+                _hover={{ textDecoration: 'none' }}
+                fontWeight="light"
               >
-                Random
+                RANDOM
               </ChakraLink>
 
               {/* Search Button */}
@@ -341,7 +352,7 @@ export default function NavigationBar() {
               </InputLeftElement>
               <Input
                 ref={inputRef}
-                placeholder="name or username"
+                placeholder="name"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 onKeyPress={handleKeyPress}

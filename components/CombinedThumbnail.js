@@ -1,26 +1,51 @@
 import { Box, Image, Flex, Text, Skeleton } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
+import { FaPlayCircle } from 'react-icons/fa';
 
 export default function CombinedThumbnail({
   media,
   modelName,
   height = { base: '70vw', sm: '400px', md: '450px', lg: '500px' }, // 70% width on mobile
   spacing = '5px',
-  maxImages = 3
+  maxImages = 3,
+  showPlayIcon = false
 }) {
   const [imageUrls, setImageUrls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadedImages, setLoadedImages] = useState({});
+  const hasVideo = media.some((m) => m.type === 'VIDEO');
 
   useEffect(() => {
-    const images = media
-      .filter((m) => m.type === 'IMAGE' || m.type === 'GIF')
-      .slice(0, maxImages)
-      .map((m) => m.url);
+    // Nếu có video, chỉ tìm và hiển thị ảnh WebP
+    if (hasVideo) {
+      const webpImage = media.find((m) => {
+        return (
+          (m.type === 'IMAGE' || m.type === 'GIF') &&
+          m.url.toLowerCase().endsWith('.webp')
+        );
+      });
 
-    setImageUrls(images);
+      if (webpImage) {
+        setImageUrls([webpImage.url]);
+      } else {
+        // Fallback: nếu không có WebP, lấy ảnh đầu tiên
+        const firstImage = media
+          .filter((m) => m.type === 'IMAGE' || m.type === 'GIF')
+          .slice(0, 1)
+          .map((m) => m.url);
+        setImageUrls(firstImage);
+      }
+    } else {
+      // Không có video: hiển thị nhiều ảnh như cũ
+      const images = media
+        .filter((m) => m.type === 'IMAGE' || m.type === 'GIF')
+        .slice(0, maxImages)
+        .map((m) => m.url);
+      setImageUrls(images);
+    }
+
     setLoading(false);
-  }, [media, maxImages]);
+  }, [media, maxImages, hasVideo]);
 
   const handleImageLoad = (index) => {
     setLoadedImages((prev) => ({ ...prev, [index]: true }));
@@ -59,6 +84,19 @@ export default function CombinedThumbnail({
           height="100%"
           onLoad={() => handleImageLoad(0)}
         />
+        {showPlayIcon && hasVideo && (
+          <Box
+            position="absolute"
+            top="50%"
+            left="50%"
+            transform="translate(-50%, -50%)"
+            color="white"
+            opacity={0.8}
+            pointerEvents="none"
+          >
+            <FaPlayCircle size={60} />
+          </Box>
+        )}
       </Box>
     );
   }

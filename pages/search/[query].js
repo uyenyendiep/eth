@@ -7,10 +7,10 @@ import {
   Heading,
   VStack,
   HStack,
-  Avatar,
   Icon,
   ChakraLink,
-  Spinner
+  Spinner,
+  Image
 } from '@chakra-ui/react';
 import Link from 'next/link';
 import { FaMapMarkerAlt, FaCamera } from 'react-icons/fa';
@@ -21,6 +21,7 @@ import { useRouter } from 'next/router';
 const ModelCard = ({ model }) => {
   const primaryUsername = model.usernames.find((u) => u.isPrimary)?.username;
   const allUsernames = model.usernames.map((u) => u.username).join(' / ');
+  const displayAvatar = model.avatarGifUrl || model.avatarUrl;
 
   return (
     <ListItem
@@ -30,11 +31,9 @@ const ModelCard = ({ model }) => {
       my={4}
       bg="white"
       width="100%"
-      maxW="600px"
+      maxW="800px"
       mx="auto"
       overflow="hidden"
-      transition="all 0.2s"
-      _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
     >
       <Link href={`/${primaryUsername}`} passHref>
         <Box
@@ -43,78 +42,43 @@ const ModelCard = ({ model }) => {
           _hover={{ textDecoration: 'none' }}
         >
           <Box
-            height="400px"
+            width="100%"
+            height={{ base: '100vw', sm: '800px' }}
+            maxH="800px"
             position="relative"
             bg="gray.100"
             display="flex"
             alignItems="center"
             justifyContent="center"
           >
-            <Avatar
-              src={model.avatarUrl}
-              name={model.name}
-              size="full"
+            <Image
+              src={displayAvatar}
+              alt={model.name}
               width="100%"
               height="100%"
-              borderRadius={0}
               objectFit="cover"
             />
-
-            <Box
-              position="absolute"
-              bottom={0}
-              left={0}
-              right={0}
-              height="150px"
-              bgGradient="linear(to-t, blackAlpha.700, transparent)"
-            />
-
-            <VStack
-              position="absolute"
-              bottom={4}
-              left={4}
-              right={4}
-              align="start"
-              spacing={2}
-              color="white"
-            >
-              <Text
-                fontSize="2xl"
-                fontWeight="bold"
-                textShadow="0 2px 4px rgba(0,0,0,0.8)"
-              >
-                {model.name}
-              </Text>
-              <Text
-                fontSize="sm"
-                opacity={0.9}
-                textShadow="0 1px 2px rgba(0,0,0,0.8)"
-              >
-                {allUsernames}
-              </Text>
-            </VStack>
           </Box>
 
-          <HStack p={4} justify="space-between" align="center">
-            <HStack spacing={4}>
+          {/* White Banner with Name and Username */}
+          <Box bg="white" p={4} borderTop="1px" borderColor="gray.100">
+            <VStack spacing={1} align="center">
+              <Text fontSize="xl" fontWeight="bold" color="gray.800">
+                {model.name}
+              </Text>
+              <Text fontSize="sm" color="gray.600">
+                {allUsernames}
+              </Text>
+
+              {/* Location if exists */}
               {model.location && (
-                <HStack color="gray.600" fontSize="sm">
-                  <Icon as={FaMapMarkerAlt} />
+                <HStack color="gray.500" fontSize="sm" mt={1}>
+                  <Icon as={FaMapMarkerAlt} boxSize={3} />
                   <Text>{model.location}</Text>
                 </HStack>
               )}
-            </HStack>
-
-            <HStack spacing={2}>
-              <Icon as={FaCamera} color="gray.600" />
-              <Text fontWeight="bold" color="gray.700">
-                {model._count?.posts || 0}
-              </Text>
-              <Text fontSize="sm" color="gray.600">
-                posts
-              </Text>
-            </HStack>
-          </HStack>
+            </VStack>
+          </Box>
         </Box>
       </Link>
     </ListItem>
@@ -176,9 +140,9 @@ export default function SearchPage() {
   return (
     <Box>
       <VStack spacing={4} mb={6}>
-        <Heading size="lg">Kết quả tìm kiếm</Heading>
+        <Heading size="lg">Search Results</Heading>
         <Text color="gray.600">
-          "{query}" - Tìm thấy {searchResults.length} models
+          "{query}" - {searchResults.length} models found
         </Text>
       </VStack>
 
@@ -186,10 +150,10 @@ export default function SearchPage() {
         <Center py={8}>
           <VStack spacing={2}>
             <Text fontSize="lg" color="gray.500">
-              Không tìm thấy model nào
+              No models found
             </Text>
             <Text fontSize="sm" color="gray.400">
-              Thử tìm kiếm với từ khóa khác
+              Try searching with a different keyword
             </Text>
           </VStack>
         </Center>

@@ -48,7 +48,11 @@ const Post = ({ id, thumbnailUrl, downloadUrl, model, media, postCount }) => {
       <Link href={`/${primaryUsername}/post/${postCount}`} passHref>
         <Stack as={ChakraLink} spacing={0}>
           <Box borderTopRadius={4} overflow="hidden">
-            <CombinedThumbnail media={media} modelName={model.name} />
+            <CombinedThumbnail
+              media={media}
+              modelName={model.name}
+              showPlayIcon={true}
+            />
           </Box>
 
           <Flex p={3} align="center">
@@ -78,7 +82,10 @@ const Post = ({ id, thumbnailUrl, downloadUrl, model, media, postCount }) => {
                   width="fit-content"
                   display="inline"
                 >
-                  {model.usernames.map((u) => u.username).join(' / ')}
+                  {model.usernames
+                    .filter((u) => !u.username.includes('-'))
+                    .map((u) => u.username)
+                    .join(' / ')}
                 </Text>
               </Link>
             </Stack>

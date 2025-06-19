@@ -45,7 +45,11 @@ const ModelPost = ({ post, username }) => {
       <Link href={`/${username}/post/${post.postCount}`} passHref>
         <Stack as={ChakraLink} spacing={0}>
           <Box borderRadius={4} overflow="hidden">
-            <CombinedThumbnail media={post.media} modelName={post.model.name} />
+            <CombinedThumbnail
+              media={post.media}
+              modelName={post.model.name}
+              showPlayIcon={true}
+            />
           </Box>
 
           <Flex p={3} align="center" justify="space-between">
@@ -74,7 +78,10 @@ const ModelPost = ({ post, username }) => {
                   width="fit-content"
                   display="inline"
                 >
-                  {post.model.usernames.map((u) => u.username).join(' / ')}
+                  {post.model.usernames
+                    .filter((u) => !u.username.includes('-'))
+                    .map((u) => u.username)
+                    .join(' / ')}
                 </Text>
               </Link>
             </Stack>
@@ -160,13 +167,49 @@ export async function getStaticProps({ params }) {
       'posts-page-1.json'
     );
     const postsData = JSON.parse(fs.readFileSync(postsDataPath, 'utf8'));
+    let totalImages = 0;
+    let totalVideos = 0;
+
+    const allPostsForCounting = [];
+    for (let page = 1; page <= postsData.totalPages; page++) {
+      const pageDataPath = path.join(
+        process.cwd(),
+        'public',
+        'data',
+        'models',
+        params.username,
+        `posts-page-${page}.json`
+      );
+
+      try {
+        const pageData = JSON.parse(fs.readFileSync(pageDataPath, 'utf8'));
+        allPostsForCounting.push(...pageData.posts);
+      } catch (error) {
+        console.log(`Could not load page ${page}`);
+      }
+    }
+
+    // Đếm media từ tất cả posts
+    allPostsForCounting.forEach((post) => {
+      if (post.media && Array.isArray(post.media)) {
+        post.media.forEach((media) => {
+          if (media.type === 'IMAGE' || media.type === 'GIF') {
+            totalImages++;
+          } else if (media.type === 'VIDEO') {
+            totalVideos++;
+          }
+        });
+      }
+    });
 
     return {
       props: {
         model: modelData.model,
         initialPosts: postsData.posts,
         totalPages: postsData.totalPages,
-        username: params.username
+        username: params.username,
+        totalImages,
+        totalVideos
       }
     };
   } catch (error) {
@@ -186,7 +229,9 @@ export default function ModelDetailPage({
   model,
   initialPosts,
   totalPages,
-  username
+  username,
+  totalImages,
+  totalVideos
 }) {
   const [displayedPosts, setDisplayedPosts] = useState(initialPosts);
   const [currentPage, setCurrentPage] = useState(1);
@@ -271,7 +316,10 @@ export default function ModelDetailPage({
     );
   }
 
-  const allUsernames = model.usernames.map((u) => u.username).join(' / ');
+  const allUsernames = model.usernames
+    .filter((u) => !u.username.includes('-'))
+    .map((u) => u.username)
+    .join(' / ');
 
   return (
     <Box maxW="800px" mx="auto" px={{ base: 2, sm: 4 }}>
@@ -308,7 +356,7 @@ export default function ModelDetailPage({
           )}
         </VStack>
 
-        <HStack spacing={{ base: 4, sm: 6 }} pt={2}>
+        {/* <HStack spacing={{ base: 4, sm: 6 }} pt={2}>
           <VStack spacing={0}>
             <Text fontWeight="bold" fontSize={{ base: 'lg', sm: 'xl' }}>
               {model._count?.posts || 0}
@@ -317,6 +365,39 @@ export default function ModelDetailPage({
               Posts
             </Text>
           </VStack>
+        </HStack> */}
+        <HStack spacing={{ base: 4, sm: 6 }} pt={2} justify="center">
+          {/* Posts count */}
+          <VStack spacing={0}>
+            <Text fontWeight="bold" fontSize={{ base: 'lg', sm: 'xl' }}>
+              {model._count?.posts || 0}
+            </Text>
+            <Text fontSize={{ base: 'xs', sm: 'sm' }} color="gray.600">
+              Posts
+            </Text>
+          </VStack>
+
+          {/* Images count */}
+          <VStack spacing={0}>
+            <Text fontWeight="bold" fontSize={{ base: 'lg', sm: 'xl' }}>
+              {totalImages}
+            </Text>
+            <Text fontSize={{ base: 'xs', sm: 'sm' }} color="gray.600">
+              Images
+            </Text>
+          </VStack>
+
+          {/* Videos count - chỉ hiển thị nếu > 0 */}
+          {totalVideos > 0 && (
+            <VStack spacing={0}>
+              <Text fontWeight="bold" fontSize={{ base: 'lg', sm: 'xl' }}>
+                {totalVideos}
+              </Text>
+              <Text fontSize={{ base: 'xs', sm: 'sm' }} color="gray.600">
+                Videos
+              </Text>
+            </VStack>
+          )}
         </HStack>
       </VStack>
 

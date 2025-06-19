@@ -14,7 +14,10 @@ import {
   IconButton,
   Flex,
   Spacer,
-  HStack
+  HStack,
+  Avatar,
+  Image,
+  VStack
 } from '@chakra-ui/react';
 import { useRouter } from 'next/router';
 import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
@@ -22,6 +25,7 @@ import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
 export default function CreateModel() {
   const [name, setName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [avatarGifUrl, setAvatarGifUrl] = useState('');
   const [location, setLocation] = useState('');
   const [usernames, setUsernames] = useState([
     { username: '', isPrimary: true }
@@ -96,6 +100,7 @@ export default function CreateModel() {
       const payload = {
         name: name.trim(),
         avatarUrl: avatarUrl.trim(),
+        avatarGifUrl: avatarGifUrl.trim() || null,
         location: location.trim() || null,
         usernames: validUsernames.map((u) => ({
           username: u.username.trim(),
@@ -125,6 +130,7 @@ export default function CreateModel() {
       // Reset form
       setName('');
       setAvatarUrl('');
+      setAvatarGifUrl('');
       setLocation('');
       setUsernames([{ username: '', isPrimary: true }]);
     } catch (err) {
@@ -159,12 +165,25 @@ export default function CreateModel() {
 
           {/* Avatar URL */}
           <FormControl isRequired>
-            <FormLabel>Avatar URL</FormLabel>
+            <FormLabel>Avatar URL (Ảnh tĩnh)</FormLabel>
             <Input
               placeholder="/media/sophie-rain/avatar.jpg"
               value={avatarUrl}
               onChange={(e) => setAvatarUrl(e.target.value)}
             />
+          </FormControl>
+
+          {/* Avatar GIF URL */}
+          <FormControl>
+            <FormLabel>Avatar GIF URL (Tùy chọn)</FormLabel>
+            <Input
+              placeholder="/media/sophie-rain/avatar.gif"
+              value={avatarGifUrl}
+              onChange={(e) => setAvatarGifUrl(e.target.value)}
+            />
+            <Text fontSize="sm" color="gray.500" mt={1}>
+              URL của ảnh GIF động cho avatar (nếu có)
+            </Text>
           </FormControl>
 
           {/* Location */}
@@ -244,24 +263,73 @@ export default function CreateModel() {
           </Box>
 
           {/* Preview */}
-          {name && (
-            <Box bg="blue.50" p={3} borderRadius="md">
-              <Text fontSize="sm" fontWeight="bold" mb={1}>
+          {(name || avatarUrl || avatarGifUrl) && (
+            <Box bg="blue.50" p={4} borderRadius="md">
+              <Text fontSize="sm" fontWeight="bold" mb={3}>
                 Preview:
               </Text>
-              <Text fontSize="sm">Tên: {name}</Text>
-              {usernames.find((u) => u.isPrimary && u.username) && (
-                <Text fontSize="sm">
-                  Primary Username:{' '}
-                  {usernames.find((u) => u.isPrimary)?.username}
-                </Text>
-              )}
-              <Text fontSize="sm">
-                Thư mục media sẽ là: /media/
-                {usernames.find((u) => u.isPrimary)?.username ||
-                  '[primary-username]'}
-                /
-              </Text>
+              
+              <HStack spacing={4} align="start">
+                {/* Avatar Preview */}
+                <VStack spacing={2}>
+                  {avatarUrl && (
+                    <Box>
+                      <Text fontSize="xs" color="gray.600" mb={1}>
+                        Avatar tĩnh:
+                      </Text>
+                      <Avatar
+                        src={avatarUrl}
+                        name={name}
+                        size="xl"
+                      />
+                    </Box>
+                  )}
+                  
+                  {avatarGifUrl && (
+                    <Box>
+                      <Text fontSize="xs" color="gray.600" mb={1}>
+                        Avatar GIF:
+                      </Text>
+                      <Image
+                        src={avatarGifUrl}
+                        alt={`${name} GIF`}
+                        boxSize="96px"
+                        borderRadius="full"
+                        objectFit="cover"
+                      />
+                    </Box>
+                  )}
+                </VStack>
+
+                {/* Info Preview */}
+                <VStack align="start" spacing={1} flex={1}>
+                  {name && (
+                    <Text fontSize="sm">
+                      <strong>Tên:</strong> {name}
+                    </Text>
+                  )}
+                  
+                  {usernames.find((u) => u.isPrimary && u.username) && (
+                    <Text fontSize="sm">
+                      <strong>Primary Username:</strong>{' '}
+                      {usernames.find((u) => u.isPrimary)?.username}
+                    </Text>
+                  )}
+                  
+                  {location && (
+                    <Text fontSize="sm">
+                      <strong>Địa điểm:</strong> {location}
+                    </Text>
+                  )}
+                  
+                  <Text fontSize="sm">
+                    <strong>Thư mục media:</strong> /media/
+                    {usernames.find((u) => u.isPrimary)?.username ||
+                      '[primary-username]'}
+                    /
+                  </Text>
+                </VStack>
+              </HStack>
             </Box>
           )}
 
