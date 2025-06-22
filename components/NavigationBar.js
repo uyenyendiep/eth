@@ -166,10 +166,17 @@ export default function NavigationBar() {
   }, [isOpen]);
 
   // Handle search
+  // Handle search
   const handleSearch = (query) => {
     setSearchQuery(query);
 
     if (query.trim() === '') {
+      setSearchResults([]);
+      return;
+    }
+
+    // Chỉ search khi có ít nhất 3 ký tự
+    if (query.trim().length < 3) {
       setSearchResults([]);
       return;
     }
@@ -216,45 +223,74 @@ export default function NavigationBar() {
   };
 
   // Handle random navigation
+  // Handle random navigation
   const handleRandom = async () => {
     try {
       const response = await fetch('/data/all-models.json');
       const data = await response.json();
 
       if (data.models && data.models.length > 0) {
-        const modelsWithPosts = data.models.filter(
-          (model) =>
+        // Lấy thông tin post hiện tại từ URL
+        const currentPath = router.pathname;
+        const currentUsername = router.query.username;
+        const currentPostCount = router.query.postCount;
+
+        // Tạo danh sách tất cả posts có thể random
+        const allPosts = [];
+
+        data.models.forEach((model) => {
+          if (
             model.postCounts &&
             Array.isArray(model.postCounts) &&
             model.postCounts.length > 0
-        );
+          ) {
+            const primaryUsername = model.usernames.find(
+              (u) => u.isPrimary
+            )?.username;
+            if (primaryUsername) {
+              model.postCounts.forEach((postCount) => {
+                allPosts.push({
+                  username: primaryUsername,
+                  postCount: postCount
+                });
+              });
+            }
+          }
+        });
 
-        if (modelsWithPosts.length === 0) {
-          console.log('No models with posts found');
+        if (allPosts.length === 0) {
+          console.log('No posts found');
           return;
         }
 
-        const randomModelIndex = Math.floor(
-          Math.random() * modelsWithPosts.length
-        );
-        const randomModel = modelsWithPosts[randomModelIndex];
+        // Lọc bỏ post hiện tại nếu đang ở trang post detail
+        let availablePosts = allPosts;
+        if (
+          currentPath === '/[username]/post/[postCount]' &&
+          currentUsername &&
+          currentPostCount
+        ) {
+          availablePosts = allPosts.filter(
+            (post) =>
+              !(
+                post.username === currentUsername &&
+                post.postCount === parseInt(currentPostCount)
+              )
+          );
+        }
 
-        const primaryUsername = randomModel.usernames.find(
-          (u) => u.isPrimary
-        )?.username;
-        if (!primaryUsername) {
-          console.log('No primary username found');
+        // Nếu chỉ còn 1 post (chính là post hiện tại) thì không làm gì
+        if (availablePosts.length === 0) {
+          console.log('No other posts available to random');
           return;
         }
 
-        const availablePostCounts = randomModel.postCounts;
-        const randomIndex = Math.floor(
-          Math.random() * availablePostCounts.length
-        );
-        const randomPostCount = availablePostCounts[randomIndex];
+        // Random một post từ danh sách available
+        const randomIndex = Math.floor(Math.random() * availablePosts.length);
+        const randomPost = availablePosts[randomIndex];
 
-        if (randomPostCount && primaryUsername) {
-          router.push(`/${primaryUsername}/post/${randomPostCount}`);
+        if (randomPost) {
+          router.push(`/${randomPost.username}/post/${randomPost.postCount}`);
         }
       }
     } catch (error) {
@@ -453,7 +489,10 @@ export default function NavigationBar() {
                           fontSize={{ base: 'xs', sm: 'sm' }}
                           color="gray.500"
                         >
-                          @{model.usernames.map((u) => u.username).join(', @')}
+                          {model.usernames
+                            .filter((u) => !u.username.includes('-'))
+                            .map((u) => u.username)
+                            .join(' / ')}
                         </Text>
                       </VStack>
                     </HStack>
@@ -482,7 +521,7 @@ export default function NavigationBar() {
                   color="blue.600"
                   fontWeight="medium"
                 >
-                  Xem tất cả kết quả cho "{searchQuery}" →
+                  See all results for "{searchQuery}" →
                 </Text>
               </ListItem>
             </List>
@@ -506,12 +545,33 @@ export default function NavigationBar() {
               textAlign="center"
               zIndex={1001}
             >
-              <Text color="gray.500" fontSize={{ base: 'sm', sm: 'md' }}>
-                Không tìm thấy kết quả cho "{searchQuery}"
-              </Text>
-              <Text color="gray.400" fontSize={{ base: 'xs', sm: 'sm' }} mt={2}>
-                Thử tìm kiếm với từ khóa khác
-              </Text>
+              {searchQuery.trim().length < 3 ? (
+                <>
+                  <Text color="gray.500" fontSize={{ base: 'sm', sm: 'md' }}>
+                    Please enter at least 3 characters to search
+                  </Text>
+                  <Text
+                    color="gray.400"
+                    fontSize={{ base: 'xs', sm: 'sm' }}
+                    mt={2}
+                  >
+                    Keyword is too short
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text color="gray.500" fontSize={{ base: 'sm', sm: 'md' }}>
+                    No results found for "{searchQuery}"
+                  </Text>
+                  <Text
+                    color="gray.400"
+                    fontSize={{ base: 'xs', sm: 'sm' }}
+                    mt={2}
+                  >
+                    Try searching with a different keyword
+                  </Text>
+                </>
+              )}
             </Box>
           </Box>
         )}

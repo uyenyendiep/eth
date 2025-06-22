@@ -416,13 +416,13 @@ export default function ModelDetailPage({
 
       {!hasMore && displayedPosts.length > 0 && (
         <Center py={4}>
-          <Text color="gray.500">That's all for now.</Text>
+          <Text color="gray.500">You have reached the end</Text>
         </Center>
       )}
 
       {displayedPosts.length === 0 && (
         <Center py={8}>
-          <Text color="gray.500">Chưa có bài viết nào</Text>
+          <Text color="gray.500">Empty</Text>
         </Center>
       )}
     </Box>

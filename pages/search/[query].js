@@ -13,14 +13,20 @@ import {
   Image
 } from '@chakra-ui/react';
 import Link from 'next/link';
-import { FaMapMarkerAlt, FaCamera } from 'react-icons/fa';
-import { useState, useEffect } from 'react';
+import { FaMapMarkerAlt } from 'react-icons/fa';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
+import { useScrollRestoration } from '../../hooks/useScrollRestoration';
+
+const MODELS_PER_PAGE = 10;
 
 // Import ModelCard component từ models page
 const ModelCard = ({ model }) => {
   const primaryUsername = model.usernames.find((u) => u.isPrimary)?.username;
-  const allUsernames = model.usernames.map((u) => u.username).join(' / ');
+  const allUsernames = model.usernames
+    .filter((u) => !u.username.includes('-'))
+    .map((u) => u.username)
+    .join(' / ');
   const displayAvatar = model.avatarGifUrl || model.avatarUrl;
 
   return (
@@ -87,20 +93,74 @@ const ModelCard = ({ model }) => {
 
 export default function SearchPage() {
   const router = useRouter();
-  const [searchResults, setSearchResults] = useState([]);
+  const [allSearchResults, setAllSearchResults] = useState([]); // Tất cả kết quả tìm kiếm
+  const [displayedModels, setDisplayedModels] = useState([]); // Models đang hiển thị
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [query, setQuery] = useState('');
+  const [isRestoring, setIsRestoring] = useState(true);
+  const [queryTooShort, setQueryTooShort] = useState(false);
+  const loadingRef = useRef(false);
 
+  const { restoreScrollState } = useScrollRestoration(
+    displayedModels,
+    currentPage
+  );
+
+  // Lấy query từ URL khi ở client-side
   useEffect(() => {
-    // Lấy query từ URL khi ở client-side
     if (router.isReady) {
-      setQuery(router.query.query || '');
+      const urlQuery = router.query.query || '';
+      setQuery(urlQuery);
+
+      // Kiểm tra độ dài query ngay khi có
+      if (urlQuery && urlQuery.trim().length < 3) {
+        setQueryTooShort(true);
+        setLoading(false);
+        setAllSearchResults([]);
+        setDisplayedModels([]);
+        setHasMore(false);
+      } else {
+        setQueryTooShort(false);
+      }
     }
   }, [router.isReady, router.query]);
 
+  // Restore state on mount
   useEffect(() => {
-    if (!query) {
-      setLoading(false);
+    // Chỉ restore nếu query hợp lệ
+    if (queryTooShort) {
+      setIsRestoring(false);
+      return;
+    }
+
+    const restored = restoreScrollState();
+    if (restored) {
+      setDisplayedModels(restored.savedPosts);
+      setCurrentPage(restored.savedPage);
+
+      // Tính toán lại hasMore dựa trên saved data
+      const totalResults = restored.savedPosts.length;
+      const expectedTotal = restored.savedPage * MODELS_PER_PAGE;
+      setHasMore(totalResults >= expectedTotal);
+
+      setTimeout(() => {
+        window.scrollTo(0, restored.scrollY);
+        setIsRestoring(false);
+      }, 100);
+    } else {
+      setIsRestoring(false);
+    }
+  }, [queryTooShort]);
+
+  // Search và load initial data
+  useEffect(() => {
+    if (!query || isRestoring || queryTooShort) {
+      if (!queryTooShort) {
+        setLoading(false);
+      }
       return;
     }
 
@@ -118,16 +178,67 @@ export default function SearchPage() {
           );
         });
 
-        setSearchResults(filtered);
+        setAllSearchResults(filtered);
+
+        // Load trang đầu tiên
+        const firstPage = filtered.slice(0, MODELS_PER_PAGE);
+        setDisplayedModels(firstPage);
+        setCurrentPage(1);
+        setHasMore(filtered.length > MODELS_PER_PAGE);
       } catch (error) {
         console.error('Error searching models:', error);
+        setHasMore(false);
       } finally {
         setLoading(false);
       }
     };
 
     searchModels();
-  }, [query]);
+  }, [query, isRestoring, queryTooShort]);
+
+  // Load more function
+  const loadMoreModels = useCallback(async () => {
+    if (loadingRef.current || !hasMore || isRestoring) return;
+
+    loadingRef.current = true;
+    setLoadingMore(true);
+
+    try {
+      const nextPage = currentPage + 1;
+      const startIndex = (nextPage - 1) * MODELS_PER_PAGE;
+      const endIndex = startIndex + MODELS_PER_PAGE;
+      const nextModels = allSearchResults.slice(startIndex, endIndex);
+
+      if (nextModels.length > 0) {
+        setDisplayedModels((prev) => [...prev, ...nextModels]);
+        setCurrentPage(nextPage);
+        setHasMore(endIndex < allSearchResults.length);
+      }
+    } catch (error) {
+      console.error('Error loading more models:', error);
+      setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+      loadingRef.current = false;
+    }
+  }, [currentPage, hasMore, isRestoring, allSearchResults]);
+
+  // Scroll event listener
+  useEffect(() => {
+    if (isRestoring || queryTooShort) return;
+
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop >=
+        document.documentElement.offsetHeight - 100
+      ) {
+        loadMoreModels();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadMoreModels, isRestoring, queryTooShort]);
 
   if (loading) {
     return (
@@ -137,32 +248,63 @@ export default function SearchPage() {
     );
   }
 
-  return (
-    <Box>
-      <VStack spacing={4} mb={6}>
-        <Heading size="lg">Search Results</Heading>
-        <Text color="gray.600">
-          "{query}" - {searchResults.length} models found
-        </Text>
-      </VStack>
-
-      {searchResults.length === 0 ? (
+  // Kiểm tra độ dài query - hiển thị thông báo nếu quá ngắn
+  if (queryTooShort) {
+    return (
+      <Box>
+        {/* <VStack spacing={4} mb={6} mt={6}>
+          <Heading size="lg">Search Results</Heading>
+          <Text color="gray.600">"{query}"</Text>
+        </VStack> */}
         <Center py={8}>
           <VStack spacing={2}>
             <Text fontSize="lg" color="gray.500">
-              No models found
+              Please enter at least 3 characters to search
             </Text>
             <Text fontSize="sm" color="gray.400">
-              Try searching with a different keyword
+              Try searching with a longer keyword
             </Text>
           </VStack>
         </Center>
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      <VStack spacing={4} mb={6} mt={6}>
+        <Heading size="lg">Search Results</Heading>
+        <Text color="gray.600">{allSearchResults.length} models found</Text>
+      </VStack>
+
+      {allSearchResults.length === 0 ? (
+        <Center py={8}>
+          <Text fontSize="sm" color="gray.400">
+            Try searching with a different keyword
+          </Text>
+        </Center>
       ) : (
-        <List>
-          {searchResults.map((model) => (
-            <ModelCard key={model.id} model={model} />
-          ))}
-        </List>
+        <>
+          <List>
+            {displayedModels.map((model) => (
+              <ModelCard key={model.id} model={model} />
+            ))}
+          </List>
+
+          {loadingMore && (
+            <Center py={4}>
+              <Spinner size="lg" color="blue.500" />
+            </Center>
+          )}
+
+          {!hasMore &&
+            displayedModels.length > 0 &&
+            displayedModels.length === allSearchResults.length && (
+              <Center py={4}>
+                <Text color="gray.500">You have reached the end</Text>
+              </Center>
+            )}
+        </>
       )}
     </Box>
   );

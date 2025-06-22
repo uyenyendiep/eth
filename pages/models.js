@@ -231,7 +231,7 @@ export default function ModelsPage({ initialModels, totalPages }) {
 
       {!hasMore && displayedModels.length > 0 && (
         <Center py={4}>
-          <Text color="gray.500">That's all for now!</Text>
+          <Text color="gray.500">You have reached the end</Text>
         </Center>
       )}
     </Box>

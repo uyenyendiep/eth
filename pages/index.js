@@ -241,7 +241,7 @@ export default function HomePage({ initialPosts, totalPages }) {
 
       {!hasMore && displayedPosts.length > 0 && (
         <Center py={4}>
-          <Text color="gray.500">Không còn bài viết nào</Text>
+          <Text color="gray.500">You have reached the end</Text>
         </Center>
       )}
     </>

@@ -283,7 +283,7 @@ export default function PostDetail({ post, randomModels }) {
                   objectFit="cover"
                 />
               )}
-              {item.type === 'VIDEO' && (
+              {/* {item.type === 'VIDEO' && (
                 <AspectRatio ratio={16 / 9}>
                   <iframe
                     src={item.url}
@@ -291,6 +291,24 @@ export default function PostDetail({ post, randomModels }) {
                     allowFullScreen
                     style={{ borderRadius: '8px' }}
                   />
+                </AspectRatio>
+              )} */}
+              {item.type === 'VIDEO' && (
+                <AspectRatio ratio={16 / 9}>
+                  <video
+                    controls
+                    controlsList="nodownload"
+                    style={{
+                      borderRadius: '8px',
+                      backgroundColor: 'black',
+                      objectFit: 'contain'
+                    }}
+                    onContextMenu={(e) => e.preventDefault()}
+                    disablePictureInPicture
+                    playsInline
+                  >
+                    <source src={item.url} type="video/mp4" />
+                  </video>
                 </AspectRatio>
               )}
               {item.type === 'GIF' && (
