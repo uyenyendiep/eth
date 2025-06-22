@@ -230,13 +230,13 @@ export default function HomePage({ initialPosts, totalPages }) {
     <>
       <NextSeo
         title="Latest Model Leaks - Image & Video Leaks | eTHOT"
-        description="Browse the latest leaked content from top models. Exclusive image leaks and video leaks updated daily. High quality photo and video collection."
+        description="Browse the latest leaked content from top models."
         canonical="https://ethot.me/"
         additionalMetaTags={[
           {
             name: 'keywords',
             content:
-              'latest leaks, new model leaks, today leaks, fresh content, exclusive leaks, daily updates'
+              'latest leaks, new model leaks, today leaks, fresh content, exclusive leaks, daily updates, fappening, free downloads, download, get link, leaks'
           }
         ]}
       />

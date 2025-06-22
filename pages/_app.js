@@ -19,7 +19,7 @@ function MyApp({ Component, pageProps }) {
           site_name: 'eTHOT',
           images: [
             {
-              url: 'https://ethot.me/og-image.jpg',
+              url: 'https://ethot.me/og-image.png',
               width: 1200,
               height: 630,
               alt: 'eTHOT - Model Content Leaks'
