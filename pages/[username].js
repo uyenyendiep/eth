@@ -18,6 +18,8 @@ import {
   Divider
 } from '@chakra-ui/react';
 import Link from 'next/link';
+import { NextSeo } from 'next-seo';
+import { generateSEOTitle, generateSEODescription } from '../config/seo.config';
 import { FaImage, FaVideo, FaMapMarkerAlt } from 'react-icons/fa';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import CombinedThumbnail from '../components/CombinedThumbnail';
@@ -321,42 +323,85 @@ export default function ModelDetailPage({
     .map((u) => u.username)
     .join(' / ');
 
-  return (
-    <Box maxW="800px" mx="auto" px={{ base: 2, sm: 4 }}>
-      {/* Model Header */}
-      <VStack
-        spacing={{ base: 3, sm: 4 }}
-        p={{ base: 3, sm: 4 }}
-        bg="white"
-        borderRadius="lg"
-        mb={4}
-        width={{ base: '100%', lg: '800px' }}
-        maxW="800px"
-      >
-        <Avatar
-          src={model.avatarUrl}
-          name={model.name}
-          size={{ base: 'xl', sm: '2xl' }}
-        />
-        <VStack spacing={1}>
-          <Heading size={{ base: 'md', sm: 'lg' }}>{model.name}</Heading>
-          <Text
-            color="gray.600"
-            fontSize={{ base: 'xs', sm: 'sm' }}
-            textAlign="center"
-            px={2}
-          >
-            {allUsernames}
-          </Text>
-          {model.location && (
-            <HStack color="gray.500" fontSize={{ base: 'xs', sm: 'sm' }}>
-              <Icon as={FaMapMarkerAlt} />
-              <Text>{model.location}</Text>
-            </HStack>
-          )}
-        </VStack>
+  const seoTitle = generateSEOTitle(model.name);
+  const seoDescription = generateSEODescription(
+    model.name,
+    totalImages,
+    totalVideos
+  );
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: model.name,
+    image: model.avatarUrl,
+    url: `https://ethot.me/${username}`,
+    description: `${model.name} exclusive leaked content collection`
+  };
 
-        {/* <HStack spacing={{ base: 4, sm: 6 }} pt={2}>
+  return (
+    <>
+      <NextSeo
+        title={seoTitle}
+        description={seoDescription}
+        canonical={`https://ethot.me/${username}`}
+        openGraph={{
+          title: seoTitle,
+          description: seoDescription,
+          images: [
+            {
+              url: model.avatarUrl,
+              width: 800,
+              height: 800,
+              alt: `${model.name} leak`
+            }
+          ]
+        }}
+        additionalMetaTags={[
+          {
+            name: 'keywords',
+            content: `${model.name} leaks, ${model.name} leaked, ${model.name} photos, ${model.name} videos, ${allUsernames} leaks`
+          }
+        ]}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <Box maxW="800px" mx="auto" px={{ base: 2, sm: 4 }}>
+        {/* Model Header */}
+        <VStack
+          spacing={{ base: 3, sm: 4 }}
+          p={{ base: 3, sm: 4 }}
+          bg="white"
+          borderRadius="lg"
+          mb={4}
+          width={{ base: '100%', lg: '800px' }}
+          maxW="800px"
+        >
+          <Avatar
+            src={model.avatarUrl}
+            name={model.name}
+            size={{ base: 'xl', sm: '2xl' }}
+          />
+          <VStack spacing={1}>
+            <Heading size={{ base: 'md', sm: 'lg' }}>{model.name}</Heading>
+            <Text
+              color="gray.600"
+              fontSize={{ base: 'xs', sm: 'sm' }}
+              textAlign="center"
+              px={2}
+            >
+              {allUsernames}
+            </Text>
+            {model.location && (
+              <HStack color="gray.500" fontSize={{ base: 'xs', sm: 'sm' }}>
+                <Icon as={FaMapMarkerAlt} />
+                <Text>{model.location}</Text>
+              </HStack>
+            )}
+          </VStack>
+
+          {/* <HStack spacing={{ base: 4, sm: 6 }} pt={2}>
           <VStack spacing={0}>
             <Text fontWeight="bold" fontSize={{ base: 'lg', sm: 'xl' }}>
               {model._count?.posts || 0}
@@ -366,65 +411,66 @@ export default function ModelDetailPage({
             </Text>
           </VStack>
         </HStack> */}
-        <HStack spacing={{ base: 4, sm: 6 }} pt={2} justify="center">
-          {/* Posts count */}
-          <VStack spacing={0}>
-            <Text fontWeight="bold" fontSize={{ base: 'lg', sm: 'xl' }}>
-              {model._count?.posts || 0}
-            </Text>
-            <Text fontSize={{ base: 'xs', sm: 'sm' }} color="gray.600">
-              Posts
-            </Text>
-          </VStack>
-
-          {/* Images count */}
-          <VStack spacing={0}>
-            <Text fontWeight="bold" fontSize={{ base: 'lg', sm: 'xl' }}>
-              {totalImages}
-            </Text>
-            <Text fontSize={{ base: 'xs', sm: 'sm' }} color="gray.600">
-              Images
-            </Text>
-          </VStack>
-
-          {/* Videos count - chỉ hiển thị nếu > 0 */}
-          {totalVideos > 0 && (
+          <HStack spacing={{ base: 4, sm: 6 }} pt={2} justify="center">
+            {/* Posts count */}
             <VStack spacing={0}>
               <Text fontWeight="bold" fontSize={{ base: 'lg', sm: 'xl' }}>
-                {totalVideos}
+                {model._count?.posts || 0}
               </Text>
               <Text fontSize={{ base: 'xs', sm: 'sm' }} color="gray.600">
-                Videos
+                Posts
               </Text>
             </VStack>
-          )}
-        </HStack>
-      </VStack>
 
-      {/* Posts List */}
-      <List>
-        {displayedPosts.map((post) => (
-          <ModelPost key={post.id} post={post} username={username} />
-        ))}
-      </List>
+            {/* Images count */}
+            <VStack spacing={0}>
+              <Text fontWeight="bold" fontSize={{ base: 'lg', sm: 'xl' }}>
+                {totalImages}
+              </Text>
+              <Text fontSize={{ base: 'xs', sm: 'sm' }} color="gray.600">
+                Images
+              </Text>
+            </VStack>
 
-      {loading && (
-        <Center py={4}>
-          <Spinner size="lg" color="blue.500" />
-        </Center>
-      )}
+            {/* Videos count - chỉ hiển thị nếu > 0 */}
+            {totalVideos > 0 && (
+              <VStack spacing={0}>
+                <Text fontWeight="bold" fontSize={{ base: 'lg', sm: 'xl' }}>
+                  {totalVideos}
+                </Text>
+                <Text fontSize={{ base: 'xs', sm: 'sm' }} color="gray.600">
+                  Videos
+                </Text>
+              </VStack>
+            )}
+          </HStack>
+        </VStack>
 
-      {!hasMore && displayedPosts.length > 0 && (
-        <Center py={4}>
-          <Text color="gray.500">You have reached the end</Text>
-        </Center>
-      )}
+        {/* Posts List */}
+        <List>
+          {displayedPosts.map((post) => (
+            <ModelPost key={post.id} post={post} username={username} />
+          ))}
+        </List>
 
-      {displayedPosts.length === 0 && (
-        <Center py={8}>
-          <Text color="gray.500">Empty</Text>
-        </Center>
-      )}
-    </Box>
+        {loading && (
+          <Center py={4}>
+            <Spinner size="lg" color="blue.500" />
+          </Center>
+        )}
+
+        {!hasMore && displayedPosts.length > 0 && (
+          <Center py={4}>
+            <Text color="gray.500">You have reached the end</Text>
+          </Center>
+        )}
+
+        {displayedPosts.length === 0 && (
+          <Center py={8}>
+            <Text color="gray.500">Empty</Text>
+          </Center>
+        )}
+      </Box>
+    </>
   );
 }

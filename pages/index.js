@@ -13,6 +13,7 @@ import {
   Spinner
 } from '@chakra-ui/react';
 import Link from 'next/link';
+import { NextSeo } from 'next-seo';
 import { FaImage, FaVideo } from 'react-icons/fa';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import CombinedThumbnail from '../components/CombinedThumbnail';
@@ -227,6 +228,18 @@ export default function HomePage({ initialPosts, totalPages }) {
 
   return (
     <>
+      <NextSeo
+        title="Latest Model Leaks - Image & Video Leaks | eTHOT"
+        description="Browse the latest leaked content from top models. Exclusive image leaks and video leaks updated daily. High quality photo and video collection."
+        canonical="https://ethot.me/"
+        additionalMetaTags={[
+          {
+            name: 'keywords',
+            content:
+              'latest leaks, new model leaks, today leaks, fresh content, exclusive leaks, daily updates'
+          }
+        ]}
+      />
       <List>
         {displayedPosts.map((post) => (
           <Post key={post.id} {...post} />

@@ -17,6 +17,7 @@ import {
   Center
 } from '@chakra-ui/react';
 import { PrismaClient } from '@prisma/client';
+import { NextSeo } from 'next-seo';
 import { FaImage, FaVideo, FaMapMarkerAlt } from 'react-icons/fa';
 import { FaLongArrowAltLeft } from 'react-icons/fa';
 import { useState, useEffect } from 'react';
@@ -218,72 +219,99 @@ export default function PostDetail({ post, randomModels }) {
       ? media.filter((m) => m.type === 'VIDEO').length
       : 0;
 
+  const hasVideo = videoCount > 0;
+  const contentType = hasVideo ? 'video' : 'image';
+  const seoTitle = `${model.name} ${contentType} leaks - Post ${post.postCount} | eTHOT`;
+  const seoDescription = `Exclusive ${model.name} leaked content. ${imageCount} photos and ${videoCount} videos in this collection. High quality ${contentType} leaks.`;
   return (
-    <Box>
-      {/* Post Detail Section */}
-      <Box maxW="800px" mx="auto" p={4}>
-        {/* Model Info */}
-        <Stack direction="row" spacing={4} align="center" mb={4}>
-          <Link href={`/${primaryUsername}`} passHref legacyBehavior>
-            <Avatar src={model.avatarUrl} name={model.name} size="lg" />
-          </Link>
-          <Box>
-            <Link
-              href={`/${primaryUsername}`}
-              _hover={{ textDecoration: 'none' }}
-              passHref
-              legacyBehavior
-            >
-              <Heading size="md" width="fit-content" display="inline">
-                {model.name}
-              </Heading>
+    <>
+      <NextSeo
+        title={seoTitle}
+        description={seoDescription}
+        canonical={`https://ethot.me/${primaryUsername}/post/${post.postCount}`}
+        openGraph={{
+          title: seoTitle,
+          description: seoDescription,
+          images: media
+            .filter((m) => m.type === 'IMAGE')
+            .slice(0, 4)
+            .map((m) => ({
+              url: m.url,
+              alt: `${model.name} leaked ${m.type.toLowerCase()}`
+            }))
+        }}
+        additionalMetaTags={[
+          {
+            name: 'keywords',
+            content: `${model.name} post ${post.postCount}, ${model.name} ${contentType} leaks, ${usernames} leaked content`
+          }
+        ]}
+      />
+      <Box>
+        {/* Post Detail Section */}
+        <Box maxW="800px" mx="auto" p={4}>
+          {/* Model Info */}
+          <Stack direction="row" spacing={4} align="center" mb={4}>
+            <Link href={`/${primaryUsername}`} passHref legacyBehavior>
+              <Avatar src={model.avatarUrl} name={model.name} size="lg" />
             </Link>
-            <Link
-              href={`/${primaryUsername}`}
-              _hover={{ textDecoration: 'none' }}
-              passHref
-              legacyBehavior
-            >
-              <Text fontSize="sm" color="gray.500">
-                {usernames}
-              </Text>
-            </Link>
-          </Box>
-
-          <HStack spacing={3} ml="auto">
-            {imageCount > 0 && (
-              <HStack spacing={1}>
-                <Icon as={FaImage} color="gray.600" boxSize={4} />
-                <Text fontSize="sm" color="gray.600">
-                  {imageCount}
+            <Box>
+              <Link
+                href={`/${primaryUsername}`}
+                _hover={{ textDecoration: 'none' }}
+                passHref
+                legacyBehavior
+              >
+                <Heading size="md" width="fit-content" display="inline">
+                  {model.name}
+                </Heading>
+              </Link>
+              <Link
+                href={`/${primaryUsername}`}
+                _hover={{ textDecoration: 'none' }}
+                passHref
+                legacyBehavior
+              >
+                <Text fontSize="sm" color="gray.500">
+                  {usernames}
                 </Text>
-              </HStack>
-            )}
-            {videoCount > 0 && (
-              <HStack spacing={1}>
-                <Icon as={FaVideo} color="gray.600" boxSize={4} />
-                <Text fontSize="sm" color="gray.600">
-                  {videoCount}
-                </Text>
-              </HStack>
-            )}
-          </HStack>
-        </Stack>
+              </Link>
+            </Box>
 
-        {/* Media List */}
-        <Stack spacing={4}>
-          {media.map((item) => (
-            <Box key={item.id} width="100%">
-              {item.type === 'IMAGE' && (
-                <Image
-                  src={item.url}
-                  alt="media"
-                  borderRadius="md"
-                  width="100%"
-                  objectFit="cover"
-                />
+            <HStack spacing={3} ml="auto">
+              {imageCount > 0 && (
+                <HStack spacing={1}>
+                  <Icon as={FaImage} color="gray.600" boxSize={4} />
+                  <Text fontSize="sm" color="gray.600">
+                    {imageCount}
+                  </Text>
+                </HStack>
               )}
-              {/* {item.type === 'VIDEO' && (
+              {videoCount > 0 && (
+                <HStack spacing={1}>
+                  <Icon as={FaVideo} color="gray.600" boxSize={4} />
+                  <Text fontSize="sm" color="gray.600">
+                    {videoCount}
+                  </Text>
+                </HStack>
+              )}
+            </HStack>
+          </Stack>
+
+          {/* Media List */}
+          <Stack spacing={4}>
+            {media.map((item) => (
+              <Box key={item.id} width="100%">
+                {item.type === 'IMAGE' && (
+                  <Image
+                    src={item.url}
+                    alt="media"
+                    borderRadius="md"
+                    width="100%"
+                    objectFit="cover"
+                  />
+                )}
+                {/* {item.type === 'VIDEO' && (
                 <AspectRatio ratio={16 / 9}>
                   <iframe
                     src={item.url}
@@ -293,78 +321,79 @@ export default function PostDetail({ post, randomModels }) {
                   />
                 </AspectRatio>
               )} */}
-              {item.type === 'VIDEO' && (
-                <AspectRatio ratio={16 / 9}>
-                  <video
-                    controls
-                    controlsList="nodownload"
-                    style={{
-                      borderRadius: '8px',
-                      backgroundColor: 'black',
-                      objectFit: 'contain'
-                    }}
-                    onContextMenu={(e) => e.preventDefault()}
-                    disablePictureInPicture
-                    playsInline
-                  >
-                    <source src={item.url} type="video/mp4" />
-                  </video>
-                </AspectRatio>
-              )}
-              {item.type === 'GIF' && (
-                <Image
-                  src={item.url}
-                  alt="gif"
-                  borderRadius="md"
-                  width="100%"
-                  objectFit="cover"
-                />
-              )}
-            </Box>
-          ))}
-        </Stack>
-      </Box>
+                {item.type === 'VIDEO' && (
+                  <AspectRatio ratio={16 / 9}>
+                    <video
+                      controls
+                      controlsList="nodownload"
+                      style={{
+                        borderRadius: '8px',
+                        backgroundColor: 'black',
+                        objectFit: 'contain'
+                      }}
+                      onContextMenu={(e) => e.preventDefault()}
+                      disablePictureInPicture
+                      playsInline
+                    >
+                      <source src={item.url} type="video/mp4" />
+                    </video>
+                  </AspectRatio>
+                )}
+                {item.type === 'GIF' && (
+                  <Image
+                    src={item.url}
+                    alt="gif"
+                    borderRadius="md"
+                    width="100%"
+                    objectFit="cover"
+                  />
+                )}
+              </Box>
+            ))}
+          </Stack>
+        </Box>
 
-      {/* You May Also Like Section */}
-      {randomModels && randomModels.length > 0 && (
-        <Box mt={4} py={2} bg="gray.50">
-          <Box maxW="800px" mx="auto" px={4}>
-            {/* <Center mb={6}>
+        {/* You May Also Like Section */}
+        {randomModels && randomModels.length > 0 && (
+          <Box mt={4} py={2} bg="gray.50">
+            <Box maxW="800px" mx="auto" px={4}>
+              {/* <Center mb={6}>
               <Heading size="lg">You may also like</Heading>
             </Center> */}
 
-            <Center mb={9} position="relative" width="100%">
-              <Box
-                position="absolute"
-                top="50%"
-                left={0}
-                right={0}
-                height="1px"
-                bg="gray.300"
-                transform="translateY(-50%)"
-              />
-              <Text
-                as="span"
-                fontSize="sm"
-                fontWeight="bold"
-                color="gray.500"
-                position="relative"
-                zIndex={1}
-                px={4} // Tạo khoảng padding che line phía sau
-                bg="gray.50" // Nền màu trùng màu nền section
-              >
-                YOU MAY ALSO LIKE
-              </Text>
-            </Center>
+              <Center mb={9} position="relative" width="100%">
+                <Box
+                  position="absolute"
+                  top="50%"
+                  left={0}
+                  right={0}
+                  height="1px"
+                  bg="gray.300"
+                  transform="translateY(-50%)"
+                />
+                <Text
+                  as="span"
+                  fontSize="sm"
+                  fontWeight="bold"
+                  color="gray.500"
+                  position="relative"
+                  zIndex={1}
+                  px={4} // Tạo khoảng padding che line phía sau
+                  bg="gray.50" // Nền màu trùng màu nền section
+                >
+                  YOU MAY ALSO LIKE
+                </Text>
+              </Center>
 
-            <List>
-              {randomModels.map((model) => (
-                <ModelCard key={model.id} model={model} />
-              ))}
-            </List>
+              <List>
+                {randomModels.map((model) => (
+                  <ModelCard key={model.id} model={model} />
+                ))}
+              </List>
+            </Box>
           </Box>
-        </Box>
-      )}
-    </Box>
+        )}
+      </Box>
+    </>
   );
 }

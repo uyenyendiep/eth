@@ -14,6 +14,7 @@ import {
 } from '@chakra-ui/react';
 import Link from 'next/link';
 import { FaMapMarkerAlt } from 'react-icons/fa';
+import { NextSeo } from 'next-seo';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useScrollRestoration } from '../../hooks/useScrollRestoration';
@@ -271,41 +272,49 @@ export default function SearchPage() {
   }
 
   return (
-    <Box>
-      <VStack spacing={4} mb={6} mt={6}>
-        <Heading size="lg">Search Results</Heading>
-        <Text color="gray.600">{allSearchResults.length} models found</Text>
-      </VStack>
+    <>
+      <NextSeo
+        title={`Search: ${query} - Model Leaks | eTHOT`}
+        description={`Search results for "${query}". Find leaked photos and videos from models matching your search.`}
+        noindex={true} // Không index trang search
+        nofollow={true}
+      />
+      <Box>
+        <VStack spacing={4} mb={6} mt={6}>
+          <Heading size="lg">Search Results</Heading>
+          <Text color="gray.600">{allSearchResults.length} models found</Text>
+        </VStack>
 
-      {allSearchResults.length === 0 ? (
-        <Center py={8}>
-          <Text fontSize="sm" color="gray.400">
-            Try searching with a different keyword
-          </Text>
-        </Center>
-      ) : (
-        <>
-          <List>
-            {displayedModels.map((model) => (
-              <ModelCard key={model.id} model={model} />
-            ))}
-          </List>
+        {allSearchResults.length === 0 ? (
+          <Center py={8}>
+            <Text fontSize="sm" color="gray.400">
+              Try searching with a different keyword
+            </Text>
+          </Center>
+        ) : (
+          <>
+            <List>
+              {displayedModels.map((model) => (
+                <ModelCard key={model.id} model={model} />
+              ))}
+            </List>
 
-          {loadingMore && (
-            <Center py={4}>
-              <Spinner size="lg" color="blue.500" />
-            </Center>
-          )}
-
-          {!hasMore &&
-            displayedModels.length > 0 &&
-            displayedModels.length === allSearchResults.length && (
+            {loadingMore && (
               <Center py={4}>
-                <Text color="gray.500">You have reached the end</Text>
+                <Spinner size="lg" color="blue.500" />
               </Center>
             )}
-        </>
-      )}
-    </Box>
+
+            {!hasMore &&
+              displayedModels.length > 0 &&
+              displayedModels.length === allSearchResults.length && (
+                <Center py={4}>
+                  <Text color="gray.500">You have reached the end</Text>
+                </Center>
+              )}
+          </>
+        )}
+      </Box>
+    </>
   );
 }

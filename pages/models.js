@@ -16,6 +16,7 @@ import {
   Image
 } from '@chakra-ui/react';
 import Link from 'next/link';
+import { NextSeo } from 'next-seo';
 import { FaMapMarkerAlt } from 'react-icons/fa';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useScrollRestoration } from '../hooks/useScrollRestoration';
@@ -210,30 +211,44 @@ export default function ModelsPage({ initialModels, totalPages }) {
   }, [loadMoreModels, isRestoring]);
 
   return (
-    <Box paddingTop="20px">
-      <Center mb={6}>
-        <Text fontSize="2xl" fontWeight="bold">
-          Top Models
-        </Text>
-      </Center>
-
-      <List>
-        {displayedModels.map((model) => (
-          <ModelCard key={model.id} model={model} />
-        ))}
-      </List>
-
-      {loading && (
-        <Center py={4}>
-          <Spinner size="lg" color="blue.500" />
+    <>
+      <NextSeo
+        title="All Models - Exclusive Image & Video Leaks Collection | eTHOT"
+        description="Browse all models with leaked content. Complete collection of exclusive photo leaks and video leaks from top models worldwide."
+        canonical="https://ethot.me/models"
+        additionalMetaTags={[
+          {
+            name: 'keywords',
+            content:
+              'all models, model directory, leaked content collection, exclusive leaks database'
+          }
+        ]}
+      />
+      <Box paddingTop="20px">
+        <Center mb={6}>
+          <Text fontSize="2xl" fontWeight="bold">
+            Top Models
+          </Text>
         </Center>
-      )}
 
-      {!hasMore && displayedModels.length > 0 && (
-        <Center py={4}>
-          <Text color="gray.500">You have reached the end</Text>
-        </Center>
-      )}
-    </Box>
+        <List>
+          {displayedModels.map((model) => (
+            <ModelCard key={model.id} model={model} />
+          ))}
+        </List>
+
+        {loading && (
+          <Center py={4}>
+            <Spinner size="lg" color="blue.500" />
+          </Center>
+        )}
+
+        {!hasMore && displayedModels.length > 0 && (
+          <Center py={4}>
+            <Text color="gray.500">You have reached the end</Text>
+          </Center>
+        )}
+      </Box>
+    </>
   );
 }
